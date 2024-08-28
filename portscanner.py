@@ -7,7 +7,7 @@ def parse_input():  # parse commandline input
     parser = argparse.ArgumentParser()
     parser.add_argument("hostname", help="Hostname to scan")
     parser.add_argument("-p", "--port", type=int, help="Scan a specific port")
-    parser.add_argument("-r", "--range", type=int, nargs=2, metavar=("Start", "End"), help="Scan a range of ports")
+    parser.add_argument("-r", "--range", type=int, nargs=2, metavar=("START", "END"), help="Scan a range of ports")
     parser.add_argument("--all", "-a", action="store_true", help="Scan all ports")
     parser.add_argument("-s", "--status", action="store_true", help="Display scan progress")
     parser.add_argument("-t", "--timeout", type=float, default=1.5, help="Set timeout value")
@@ -45,8 +45,7 @@ def write_logfile(hostn, file_loc, _values: list):  # write scan summary to logf
     fpath = file_loc
     while True:
         if os.path.exists(fpath):
-            if input(
-                    f"The file {fpath} exists on this system. Do you want to overwrite this file? [y]: ").strip().lower() != 'y':
+            if input(f"The file {fpath} exists on this system. Do you want to overwrite this file? [y]: ").strip().lower() != 'y':
                 fpath = input("Enter new file path: ")
                 continue
         break
@@ -101,20 +100,20 @@ host = args.hostname
 status = args.status
 file_loc = args.log
 
-if args.port is not None:
+if args.port is not None: # scan a single port
     if args.port < 0 or args.port > 65535:
         print("Invalid port number!")
         exit(1)
 
     scan_port(host, args.port)
 
-elif args.range is not None:
+elif args.range is not None: # scan a range of ports
     if args.range[0] > args.range[1] or args.range[0] < 0 or args.range[0] > 65535 or args.range[1] < 0 or \
-            args.range[1] > 65535:
+            args.range[1] > 65535: # ensure the range is valid
         print("Invalid port range!")
         exit(1)
 
     scan_ports(host, args.range, status, file_loc)
 
-elif args.all:
+elif args.all: # scan all the ports
     scan_ports(host, [0, 65535], status, file_loc)
