@@ -1,6 +1,5 @@
 import socket
 import argparse
-import os
 from datetime import datetime
 
 
@@ -21,10 +20,10 @@ def parse_input():  # parse command line arguments
     parser.add_argument("target", help="Target to scan")
     parser.add_argument("-p", "--port", type=int, help="Scan a specific port")
     parser.add_argument("-r", "--range", type=int, nargs=2, metavar=("START", "END"), help="Scan a range of ports")
-    parser.add_argument("--all", "-a", action="store_true", help="Scan all ports")
-    parser.add_argument("-s", "--status", action="store_true", help="Display scan progress")
+    parser.add_argument("-a", "--all", action="store_true", help="Scan all ports")
+    parser.add_argument("-v", "--verbose", action="store_true", help="Display detailed scan progress")
     parser.add_argument("-t", "--timeout", type=float, default=1.5, help="Set timeout value")
-    parser.add_argument("-l", "--log", type=str, help="Store results in a log file")
+    parser.add_argument("-l", "--log", action="store_true", help="Store results in a log file")
 
     args = parser.parse_args()
 
@@ -49,27 +48,18 @@ def get_addr(hostn: str):  # resolve hostname to ip_addr
         exit(1)
 
 
-def write_logfile(_log_file_path: str, _values: list, start: int, end: int):  # write scan summary to logfile
+def write_logfile(_values: list, start: int, end: int):  # write scan summary to logfile
     """
     This function is used to write the scan summary to the log file. It includes the range of ports scanned,
     the status of each open port, and the summary of the scan.
 
-    :param _log_file_path: File path to write and save log file
     :param _values: list which contains the values of open ports
     :param start: Start of the port range scanned.
     :param end: End of the port range scanned.
 
     """
-    fpath = _log_file_path
+    fpath = f"report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"  # name of log file generated automatically
     try:
-        while True:
-            if os.path.exists(fpath):
-                if input(
-                        f"The file {fpath} exists on this system. Do you want to overwrite this file? [y]: ").strip().lower() != 'y':
-                    fpath = input("Enter new file path: ")
-                    continue
-            break
-
         with open(fpath, "w") as f:
             f.write(f"Scan report for {host} [{hostn}]\n")
             f.write(f"Scanned ports {start} to {end}\n")
@@ -94,17 +84,16 @@ def write_logfile(_log_file_path: str, _values: list, start: int, end: int):  # 
         print(f"Unexpected Error while writing to file {fpath}: {e}\n")
 
 
-def scan_ports(host, hostn, port_list, timeout, status, _log_file_path):  # scan a range of ports
+def scan_ports(host, hostn, port_list, timeout, verbose, write_log):  # scan a range of ports
     """
-    This functions scans a given range of ports and displays the status, progress and summary of the scan. If a file path is given to save
-    the scan results, it will call the write_logfile() function to write the scan summary to the logfile.
+    This functions scans a given range of ports and displays the status, progress and summary of the scan, and write to a log file.
 
     :param host: target address
     :param hostn: target hostname
     :param port_list: this list contains the START and END value for range
     :param timeout: connection timeout value
-    :param status: Boolean used to check whether to display the scan progress
-    :param _log_file_path: location to save log file. If no location is given, the parameter is set as false
+    :param verbose: Boolean used to check whether to display the scan progress
+    :param write_log: Boolean used to check whether to write to a log file
 
 
     """
@@ -112,24 +101,34 @@ def scan_ports(host, hostn, port_list, timeout, status, _log_file_path):  # scan
 
     try:  # try to scan given range of ports
         print(f"Scanning host {host} [{hostn}]\n")
-
         for portn in range(port_list[0], port_list[1] + 1):
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as scanner:
                 scanner.settimeout(timeout)
 
-                if status:
+                isOpen = scanner.connect_ex((host, portn)) == 0
+
+                if isOpen:
+                    open_ports.append(portn)
+
+                if verbose:
                     print(f"\nScanning port {portn}")
+                    if isOpen:
+                        print(f"Port {portn} is open")
+                        open_ports.append(portn)
+                    else:
+                        print(f"Port {portn} is closed")
+
                     print(
                         f"Scan Progress: {(portn - port_list[0]) / (port_list[1] - port_list[0]) * 100:.2f}% complete")
-                if scanner.connect_ex((host, portn)) == 0:
-                    print(f"Port {portn} is open")
-                    open_ports.append(portn)
                 else:
-                    print(f"Port {portn} is closed")
+                    print(
+                        f"\rScan Progress: {(portn - port_list[0]) / (port_list[1] - port_list[0]) * 100:.2f}% complete",
+                        end="\r")
 
         print(f"\nScan Complete!\nFound {len(open_ports)} port(s) open\n")
 
         print(f"Scan Summary")
+        print("-------------")
         if open_ports:
             for port in open_ports:
                 print(f"Port {port} is open")
@@ -145,8 +144,8 @@ def scan_ports(host, hostn, port_list, timeout, status, _log_file_path):  # scan
         print(f"Unexpected Error while scanning port: {e}")
 
     finally:  # write open ports to logfile regardless of exceptions
-        if _log_file_path is not None:
-            write_logfile(_log_file_path, open_ports, port_list[0], port_list[1])
+        if write_log:
+            write_logfile(open_ports, port_list[0], port_list[1])
 
 
 # run the port scanner
@@ -155,10 +154,9 @@ args = parse_input()
 
 hostn = args.target
 host = get_addr(hostn)
-status = args.status
-_log_file_path = args.log
+verbose = args.verbose
+write_log = args.log
 _timeout = args.timeout
-
 
 # check if range and port numbers is valid
 if args.range:
@@ -176,13 +174,12 @@ if args.port:
         print("Error: Port range values must be between 1 and 65535.")
         exit(1)
 
-
 if args.port is not None:  # scan a single port
-    status = False
-    scan_ports(host, hostn, [args.port, args.port], _timeout, status, _log_file_path)
+    verbose = False
+    scan_ports(host, hostn, [args.port, args.port], _timeout, verbose, write_log)
 
 elif args.range is not None:  # scan a range of ports
-    scan_ports(host, hostn, args.range, _timeout, status, _log_file_path)
+    scan_ports(host, hostn, args.range, _timeout, verbose, write_log)
 
 elif args.all:  # scan all the ports
-    scan_ports(host, hostn, [1, 65535], _timeout, status, _log_file_path)
+    scan_ports(host, hostn, [1, 65535], _timeout, verbose, write_log)
