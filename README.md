@@ -6,14 +6,14 @@ This is a simple port scanner written in Python. It allows the user to scan a sp
 - **Scan a specific port on the target:** Check if a single port is open on the target.
 - **Scan a range of ports on the target:** Check if a range of ports are open on the target.
 - **Scan all ports on the target:** Check if all ports from 0 to 65535 are open on the target.
-- **Save scan results to a log file.**
+- **Save scan results to a auto gernerated log file.**
 - **View the progress of the scan for a range of ports.**
 
-## Usage
-portscanner.py [-h] [-p PORT] [-r Start End] [--all] [-s] [-t TIMEOUT] [-l LOG] hostname
+## Usage 
+portscanner.py [-h] [-p PORT] [-r START END] [-a] [-v] [-t TIMEOUT] [-l] target
 
 ## Command-line arguments
-**hostname              Hostname to scan**
+**target             Target to scan**
 
 **-p PORT, --port PORT  Scan a specific port**
 
@@ -22,12 +22,14 @@ portscanner.py [-h] [-p PORT] [-r Start End] [--all] [-s] [-t TIMEOUT] [-l LOG] 
                       
 **--all, -a             Scan all ports**
 
-**-s, --status          Display scan progress**
+**-v, --verbose          Display detailed scan progress**
 
 **-t TIMEOUT, --timeout TIMEOUT
                         Set timeout value**
                       
-**-l LOG, --log LOG     Store results in a log file**                    
+**-l LOG, --log LOG     Store results in a log file**  
+
+**-h, --help            show help message and exit
 
 ## Examples
 **Scan a single port**
@@ -40,7 +42,7 @@ portscanner.py [-h] [-p PORT] [-r Start End] [--all] [-s] [-t TIMEOUT] [-l LOG] 
 `python3 portscanner.py example.com --all`
 
 **Save scan results to a log file**
-`python3 portscanner.py example.com -r 22 80 --log scan_log.txt`
+`python3 portscanner.py example.com -r 22 80 --log`
 
 **View scan progress**
-`python3 portscanner.py example.com --range 100 200 --status -l scan_log.txt`
+`python3 portscanner.py example.com --range 100 200 --verbose -l`
