@@ -48,12 +48,29 @@ def get_addr(hostn: str):  # resolve hostname to ip_addr
         exit(1)
 
 
-def write_logfile(_values: list, start: int, end: int):  # write scan summary to logfile
+def get_servname(port):
+    """
+    This function takes a port number as input and returns the corresponding service
+    name as the output. If service name could not be determined, it returns
+    an empty string
+
+    :param port: port number
+    :return: service running on the port
+
+    """
+    try:
+        return f" [{socket.getservbyport(port)}]"
+    except OSError:
+        return ""
+
+
+def write_logfile(_values: dict, start: int, end: int):  # write scan summary to logfile
     """
     This function is used to write the scan summary to the log file. It includes the range of ports scanned,
     the status of each open port, and the summary of the scan.
 
-    :param _values: list which contains the values of open ports
+    :param _values: dictionary which contains the values of open ports and their
+    corresponding service name
     :param start: Start of the port range scanned.
     :param end: End of the port range scanned.
 
@@ -68,7 +85,7 @@ def write_logfile(_values: list, start: int, end: int):  # write scan summary to
             f.write("================================================\n\n")
 
             for port in _values:
-                f.write(f"PORT {port}: OPEN\n")
+                f.write(f"PORT {port} [{_values[port]}]: OPEN\n")
 
             if not _values:
                 f.write("All Ports were CLOSED!\n")
@@ -97,7 +114,7 @@ def scan_ports(host, hostn, port_list, timeout, verbose, write_log):  # scan a r
 
 
     """
-    open_ports = []
+    open_ports = {}
 
     try:  # try to scan given range of ports
         print(f"Scanning host {host} [{hostn}]\n")
@@ -105,16 +122,15 @@ def scan_ports(host, hostn, port_list, timeout, verbose, write_log):  # scan a r
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as scanner:
                 scanner.settimeout(timeout)
 
-                isOpen = scanner.connect_ex((host, portn)) == 0
+                is_open = scanner.connect_ex((host, portn)) == 0
 
-                if isOpen:
-                    open_ports.append(portn)
+                if is_open:
+                    open_ports[portn] = get_servname(portn)
 
                 if verbose:
                     print(f"\nScanning port {portn}")
-                    if isOpen:
+                    if is_open:
                         print(f"Port {portn} is open")
-                        open_ports.append(portn)
                     else:
                         print(f"Port {portn} is closed")
 
@@ -131,17 +147,17 @@ def scan_ports(host, hostn, port_list, timeout, verbose, write_log):  # scan a r
         print("-------------")
         if open_ports:
             for port in open_ports:
-                print(f"Port {port} is open")
+                print(f"Port {port}{open_ports[port]} is open")
             print()
 
         else:
             print("All ports were closed!\n")
 
     except socket.error as e:
-        print(f"Socket Error while scanning port: {e}")
+        print(f"Socket Error: {e}")
 
     except Exception as e:
-        print(f"Unexpected Error while scanning port: {e}")
+        print(f"Unexpected Error: {e}")
 
     finally:  # write open ports to logfile regardless of exceptions
         if write_log:
@@ -175,7 +191,7 @@ if args.port:
         exit(1)
 
 if args.port is not None:  # scan a single port
-    verbose = False
+    verbose = False  # Don't change value of verbose to true. It will result in a division by zero error
     scan_ports(host, hostn, [args.port, args.port], _timeout, verbose, write_log)
 
 elif args.range is not None:  # scan a range of ports
