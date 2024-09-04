@@ -135,10 +135,10 @@ def scan_ports(host, hostn, port_list, timeout, verbose, write_log):  # scan a r
                         print(f"Port {portn} is closed")
 
                     print(
-                        f"Scan Progress: {(portn - port_list[0]) / (port_list[1] - port_list[0]) * 100:.2f}% complete")
+                        f"Scan Progress: {(portn - port_list[0] + 1) / (port_list[1] - port_list[0] + 1) * 100:.2f}% complete")
                 else:
                     print(
-                        f"\rScan Progress: {(portn - port_list[0]) / (port_list[1] - port_list[0]) * 100:.2f}% complete",
+                        f"\rScan Progress: {(portn - port_list[0] + 1) / (port_list[1] - port_list[0] + 1) * 100:.2f}% complete",
                         end="\r")
 
         print(f"\nScan Complete!\nFound {len(open_ports)} port(s) open\n")
@@ -191,7 +191,6 @@ if args.port:
         exit(1)
 
 if args.port is not None:  # scan a single port
-    verbose = False  # Don't change value of verbose to true. It will result in a division by zero error
     scan_ports(host, hostn, [args.port, args.port], _timeout, verbose, write_log)
 
 elif args.range is not None:  # scan a range of ports
