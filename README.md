@@ -29,7 +29,7 @@ portscanner.py [-h] [-p PORT] [-r START END] [-a] [-v] [-t TIMEOUT] [-l] target
                       
 **-l LOG, --log LOG     Store results in a log file**  
 
-**-h, --help            show help message and exit
+**-h, --help            show help message and exit**
 
 ## Examples
 **Scan a single port**
