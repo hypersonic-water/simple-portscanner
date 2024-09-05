@@ -85,7 +85,7 @@ def write_logfile(_values: dict, start: int, end: int):  # write scan summary to
             f.write("================================================\n\n")
 
             for port in _values:
-                f.write(f"PORT {port} [{_values[port]}]: OPEN\n")
+                f.write(f"PORT {port}{_values[port]}: OPEN\n")
 
             if not _values:
                 f.write("All Ports were CLOSED!\n")
